@@ -1,0 +1,195 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile with role-based access information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["student", "parent", "coach"] },
+        "linkedStudentIds": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "email", "displayName", "role"]
+    },
+    "student": {
+      "title": "Student",
+      "description": "Student profile with academic and athletic attributes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "grade": { "type": "string", "maxLength": 32 },
+        "sport": { "type": "string", "maxLength": 64 },
+        "primaryCoachId": { "type": "string", "maxLength": 128 },
+        "parentIds": { "type": "array" },
+        "overallGpa": { "type": "number" },
+        "statusSummary": { "type": "string", "maxLength": 256 },
+        "academicStatus": { "type": "string", "enum": ["Good Standing", "Needs Attention", "Watchlist", "High Risk"] },
+        "trainingLoad": { "type": "string", "enum": ["Light", "Moderate", "High", "Extreme"] },
+        "workloadStatus": { "type": "string", "enum": ["Balanced", "Manageable", "High", "Critical"] },
+        "attentionStatus": { "type": "string", "enum": ["On Track", "Watch", "Attention"] },
+        "attentionReason": { "type": "string", "maxLength": 512 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "grade", "sport", "academicStatus", "trainingLoad", "attentionStatus"]
+    },
+    "subject": {
+      "title": "Subject",
+      "description": "Academic course subject enrolled by student",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "teacher": { "type": "string", "maxLength": 128 },
+        "currentGrade": { "type": "number" },
+        "overallMastery": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "name", "currentGrade", "overallMastery"]
+    },
+    "topic": {
+      "title": "Topic",
+      "description": "Granular topic with mastery score within a subject",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "subjectName": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "masteryPercentage": { "type": "number" },
+        "lastAssessedDate": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["strong", "proficient", "needs_attention"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "subjectName", "name", "masteryPercentage"]
+    },
+    "assignment": {
+      "title": "Assignment",
+      "description": "Academic assignment with due date and completion state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "subjectName": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "dueDate": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["pending", "completed", "overdue"] },
+        "estimatedMinutes": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "subjectName", "title", "dueDate", "status"]
+    },
+    "assessment": {
+      "title": "Assessment",
+      "description": "Upcoming exam, test, or quiz",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 128 },
+        "subjectName": { "type": "string", "maxLength": 128 },
+        "topicName": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "date": { "type": "string", "maxLength": 64 },
+        "weight": { "type": "string", "maxLength": 64 },
+        "importance": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "subjectName", "title", "date", "importance"]
+    },
+    "trainingSession": {
+      "title": "TrainingSession",
+      "description": "Athletic training session with duration and intensity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 64 },
+        "dayOfWeek": { "type": "string", "maxLength": 32 },
+        "sport": { "type": "string", "maxLength": 64 },
+        "durationMinutes": { "type": "number" },
+        "intensity": { "type": "string", "enum": ["Light", "Moderate", "High"] },
+        "notes": { "type": "string", "maxLength": 512 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "date", "dayOfWeek", "durationMinutes", "intensity"]
+    },
+    "weeklyPlan": {
+      "title": "WeeklyPlan",
+      "description": "Balanced academic and athletic schedule created by student or agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "weekStartDate": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["draft", "active", "completed"] },
+        "items": { "type": "array" },
+        "rationale": { "type": "string", "maxLength": 1024 },
+        "generatedBy": { "type": "string", "enum": ["student", "balance_agent", "coach"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "weekStartDate", "items", "status"]
+    },
+    "courseMaterial": {
+      "title": "CourseMaterial",
+      "description": "Curriculum course content for AI Tutor grounded retrieval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "topic": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "content": { "type": "string", "maxLength": 8192 },
+        "keyConcepts": { "type": "array" },
+        "referenceSources": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "subject", "topic", "title", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles and assigned role relationships"
+    },
+    "/students/{studentId}": {
+      "schema": "student",
+      "description": "Core student profile and high-level success indicators"
+    },
+    "/students/{studentId}/subjects/{subjectId}": {
+      "schema": "subject",
+      "description": "Academic subjects for a student"
+    },
+    "/students/{studentId}/topics/{topicId}": {
+      "schema": "topic",
+      "description": "Subject topics and mastery levels"
+    },
+    "/students/{studentId}/assignments/{assignmentId}": {
+      "schema": "assignment",
+      "description": "Upcoming and completed homework and tasks"
+    },
+    "/students/{studentId}/assessments/{assessmentId}": {
+      "schema": "assessment",
+      "description": "Upcoming tests and quizzes"
+    },
+    "/students/{studentId}/trainingSessions/{sessionId}": {
+      "schema": "trainingSession",
+      "description": "Athletic training logs and planned sessions"
+    },
+    "/students/{studentId}/weeklyPlans/{planId}": {
+      "schema": "weeklyPlan",
+      "description": "Synchronized balanced weekly study and athletic schedules"
+    },
+    "/courseMaterials/{materialId}": {
+      "schema": "courseMaterial",
+      "description": "Official course materials used to ground AI Tutor answers"
+    }
+  }
+}

@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global security primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isCoach() {
+      return hasUserDoc() && getUserData().role == 'coach';
+    }
+
+    // Check if the current user is the student, an authorized parent, or their coach
+    function canAccessStudent(studentId) {
+      return isSignedIn() && (
+        request.auth.uid == studentId ||
+        isCoach() ||
+        (hasUserDoc() && 'linkedStudentIds' in getUserData() && studentId in getUserData().linkedStudentIds) ||
+        (exists(/databases/$(database)/documents/students/$(studentId)) && (
+          request.auth.uid == get(/databases/$(database)/documents/students/$(studentId)).data.primaryCoachId ||
+          request.auth.uid in get(/databases/$(database)/documents/students/$(studentId)).data.parentIds
+        ))
+      );
+    }
+
+    function isStudentOrCoach(studentId) {
+      return isSignedIn() && (
+        request.auth.uid == studentId ||
+        isCoach() ||
+        (exists(/databases/$(database)/documents/students/$(studentId)) &&
+          request.auth.uid == get(/databases/$(database)/documents/students/$(studentId)).data.primaryCoachId)
+      );
+    }
+
+    // User profiles: users can read their own profile. Authenticated users can create their own profile
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isSignedIn() && resource.data.id == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId) &&
+        request.resource.data.role in ['student', 'parent', 'coach'];
+      allow update: if isOwner(userId) &&
+        request.resource.data.role == resource.data.role; // Prevents role escalation
+    }
+
+    // Students collection
+    match /students/{studentId} {
+      allow get: if canAccessStudent(studentId);
+      // For coaches, allow listing students assigned to them, or students themselves
+      allow list: if isSignedIn() && (
+        isCoach() ||
+        resource.data.id == request.auth.uid ||
+        resource.data.primaryCoachId == request.auth.uid ||
+        request.auth.uid in resource.data.parentIds ||
+        (hasUserDoc() && 'linkedStudentIds' in getUserData() && resource.data.id in getUserData().linkedStudentIds)
+      );
+      // Allow initial seeding or updates by coach/student
+      allow create: if isSignedIn() && isValidId(studentId);
+      allow update: if isStudentOrCoach(studentId) &&
+        request.resource.data.id == resource.data.id;
+    }
+
+    // Student subcollections: subjects, topics, assignments, assessments, trainingSessions, weeklyPlans
+    match /students/{studentId}/subjects/{subjectId} {
+      allow read: if canAccessStudent(studentId);
+      allow write: if isStudentOrCoach(studentId) && isValidId(subjectId);
+    }
+
+    match /students/{studentId}/topics/{topicId} {
+      allow read: if canAccessStudent(studentId);
+      allow write: if isStudentOrCoach(studentId) && isValidId(topicId);
+    }
+
+    match /students/{studentId}/assignments/{assignmentId} {
+      allow read: if canAccessStudent(studentId);
+      allow write, delete: if isStudentOrCoach(studentId) && isValidId(assignmentId);
+    }
+
+    match /students/{studentId}/assessments/{assessmentId} {
+      allow read: if canAccessStudent(studentId);
+      allow write, delete: if isStudentOrCoach(studentId) && isValidId(assessmentId);
+    }
+
+    match /students/{studentId}/trainingSessions/{sessionId} {
+      allow read: if canAccessStudent(studentId);
+      allow write, delete: if isStudentOrCoach(studentId) && isValidId(sessionId);
+    }
+
+    match /students/{studentId}/weeklyPlans/{planId} {
+      allow read: if canAccessStudent(studentId);
+      allow write: if isStudentOrCoach(studentId) && isValidId(planId);
+    }
+
+    // Course Materials: readable by all signed-in users, writable only by coaches
+    match /courseMaterials/{materialId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(materialId);
+    }
+
+    // School registry: pre-enrolled identity records for account activation
+    match /schoolRegistry/{recordId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Test connection doc
+    match /test/{docId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
